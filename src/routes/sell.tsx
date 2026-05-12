@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { SiteShell } from "@/components/site-shell";
 import { categories } from "@/lib/data";
+import { addDoc, collection } from "firebase/firestore";
+import { db } from "@/firebase";
 
 export const Route = createFileRoute("/sell")({
   head: () => ({
@@ -53,15 +55,35 @@ function SellPage() {
     return { low: Math.round(center * 0.85), mid: center, high: Math.round(center * 1.15) };
   }, [form.category, form.condition]);
 
-  const onSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!form.title || !form.price) {
-      toast.error("Title and price are required");
-      return;
-    }
-    toast.success("Listing posted!", { description: "Your item is now live for students to discover." });
+  const onSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+
+  if (!form.title || !form.price) {
+    toast.error("Title and price are required");
+    return;
+  }
+
+  try {
+    await addDoc(collection(db, "listings"), {
+      title: form.title,
+      price: form.price,
+      category: form.category,
+      condition: form.condition,
+      location: form.location,
+      description: form.description,
+      images,
+      createdAt: new Date(),
+    });
+
+    toast.success("Listing posted!", {
+      description: "Your item is now live.",
+    });
+
     setTimeout(() => navigate({ to: "/browse" }), 700);
-  };
+  } catch (error: any) {
+    toast.error(error.message);
+  }
+};
 
   return (
     <SiteShell>
