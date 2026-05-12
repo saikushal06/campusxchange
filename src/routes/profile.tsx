@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import {
   Award,
   CheckCircle2,
@@ -54,7 +54,7 @@ const reviewBreakdown = [
 
 function ProfilePage() {
   const user = auth.currentUser;
-
+  const navigate = useNavigate();
   const [myListings, setMyListings] = useState<any[]>([]);
   const [saved] = useState<any[]>([]);
 
@@ -100,6 +100,12 @@ function ProfilePage() {
       console.error(error);
     }
   };
+  const handleEdit = (id: string) => {
+  navigate({
+    to: "/edit-listing/$id",
+    params: { id },
+  });
+};
 
   return (
     <SiteShell>
@@ -234,11 +240,12 @@ function ProfilePage() {
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {myListings.map((l, i) => (
             <ListingCard
-              key={l.id}
-              listing={l}
-              index={i}
-              onDelete={handleDelete}
-            />
+  key={l.id}
+  listing={l}
+  index={i}
+  onDelete={handleDelete}
+  onEdit={handleEdit}
+/>
           ))}
         </div>
       </Section>

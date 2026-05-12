@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, Flame, Heart, MapPin, ShieldCheck, Sparkles, Star, Tag, Trash2 } from "lucide-react";
+import { Eye, Flame, Heart, MapPin, ShieldCheck, Sparkles, Star, Tag, Trash2, Pencil } from "lucide-react";
 import { useState } from "react";
 import type { Badge, Listing } from "@/lib/data";
 
@@ -15,10 +15,12 @@ export function ListingCard({
   listing,
   index = 0,
   onDelete,
+onEdit,
 }: {
   listing: Listing;
   index?: number;
   onDelete?: (id: string) => void;
+  onEdit?: (id: string) => void;
 }) {
   const [saved, setSaved] = useState(false);
   const [hover, setHover] = useState(false);
@@ -74,6 +76,17 @@ export function ListingCard({
     className="absolute bottom-3 right-3 w-9 h-9 grid place-items-center rounded-full bg-red-500 text-white shadow-lg hover:scale-110 transition-transform"
   >
     <Trash2 className="w-4 h-4" />
+  </button>
+)}
+{onEdit && (
+  <button
+    onClick={(e) => {
+      e.preventDefault();
+      onEdit(listing.id);
+    }}
+    className="absolute bottom-3 left-3 w-9 h-9 grid place-items-center rounded-full bg-blue-500 text-white shadow-lg hover:scale-110 transition-transform"
+  >
+    <Pencil className="w-4 h-4" />
   </button>
 )}
           <motion.button
