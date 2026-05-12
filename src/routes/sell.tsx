@@ -19,6 +19,7 @@ export const Route = createFileRoute("/sell")({
 
 function SellPage() {
   const navigate = useNavigate();
+
   const [form, setForm] = useState({
     title: "",
     price: "",
@@ -27,63 +28,121 @@ function SellPage() {
     location: "",
     description: "",
   });
-  const [images, setImages] = useState<string[]>([]);
-  const [dragOver, setDragOver] = useState(false);
 
-  const update = <K extends keyof typeof form>(k: K, v: string) => setForm((f) => ({ ...f, [k]: v }));
+  const [images, setImages] = useState<string[]>([]);
+  const [imageFiles, setImageFiles] = useState<File[]>([]);
+  const [dragOver, setDragOver] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const update = <K extends keyof typeof form>(k: K, v: string) =>
+    setForm((f) => ({ ...f, [k]: v }));
 
   const handleFiles = (files: FileList | null) => {
     if (!files) return;
-    const next: string[] = [];
-    Array.from(files)
-      .slice(0, 6 - images.length)
-      .forEach((f) => {
-        if (f.type.startsWith("image/")) next.push(URL.createObjectURL(f));
-      });
-    setImages((p) => [...p, ...next].slice(0, 6));
+
+    const selectedFiles = Array.from(files)
+      .filter((f) => f.type.startsWith("image/"))
+      .slice(0, 6 - imageFiles.length);
+
+    const previewUrls = selectedFiles.map((file) => URL.createObjectURL(file));
+
+    setImageFiles((prev) => [...prev, ...selectedFiles].slice(0, 6));
+    setImages((prev) => [...prev, ...previewUrls].slice(0, 6));
   };
 
-  const removeImage = (i: number) => setImages((p) => p.filter((_, idx) => idx !== i));
+  const removeImage = (i: number) => {
+    setImages((p) => p.filter((_, idx) => idx !== i));
+    setImageFiles((p) => p.filter((_, idx) => idx !== i));
+  };
 
-  // Mock AI suggested pricing based on category + condition
   const aiSuggested = useMemo(() => {
-    const baseMap: Record<string, number> = { Books: 600, Notes: 250, Gadgets: 12000, "Hostel/PG": 6500, "Event Tickets": 1800, Others: 1500 };
-    const condMul: Record<string, number> = { New: 1, "Like New": 0.85, Excellent: 0.7, Good: 0.55, Fair: 0.4 };
+    const baseMap: Record<string, number> = {
+      Books: 600,
+      Notes: 250,
+      Gadgets: 12000,
+      "Hostel/PG": 6500,
+      "Event Tickets": 1800,
+      Others: 1500,
+    };
+
+    const condMul: Record<string, number> = {
+      New: 1,
+      "Like New": 0.85,
+      Excellent: 0.7,
+      Good: 0.55,
+      Fair: 0.4,
+    };
+
     const base = baseMap[form.category] ?? 1000;
     const mul = condMul[form.condition] ?? 0.7;
     const center = Math.round((base * mul) / 50) * 50;
-    return { low: Math.round(center * 0.85), mid: center, high: Math.round(center * 1.15) };
+
+    return {
+      low: Math.round(center * 0.85),
+      mid: center,
+      high: Math.round(center * 1.15),
+    };
   }, [form.category, form.condition]);
 
+  const uploadImagesToCloudinary = async () => {
+    const uploads = imageFiles.map(async (file) => {
+      const data = new FormData();
+      data.append("file", file);
+      data.append("upload_preset", "docwrip5");
+
+      const res = await fetch("https://api.cloudinary.com/v1_1/dsi3y9dsj/image/upload", {
+        method: "POST",
+        body: data,
+      });
+
+      const imgData = await res.json();
+
+      if (!res.ok) {
+        throw new Error(imgData.error?.message || "Image upload failed");
+      }
+
+      return imgData.secure_url;
+    });
+
+    return Promise.all(uploads);
+  };
+
   const onSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!form.title || !form.price) {
-    toast.error("Title and price are required");
-    return;
-  }
+    if (!form.title || !form.price) {
+      toast.error("Title and price are required");
+      return;
+    }
 
-  try {
-    await addDoc(collection(db, "listings"), {
-      title: form.title,
-      price: form.price,
-      category: form.category,
-      condition: form.condition,
-      location: form.location,
-      description: form.description,
-      images,
-      createdAt: new Date(),
-    });
+    try {
+      setIsSubmitting(true);
 
-    toast.success("Listing posted!", {
-      description: "Your item is now live.",
-    });
+      const uploadedImages = await uploadImagesToCloudinary();
 
-    setTimeout(() => navigate({ to: "/browse" }), 700);
-  } catch (error: any) {
-    toast.error(error.message);
-  }
-};
+      await addDoc(collection(db, "listings"), {
+        title: form.title,
+        price: Number(form.price),
+        category: form.category,
+        condition: form.condition,
+        location: form.location,
+        description: form.description,
+        images: uploadedImages,
+        createdAt: new Date(),
+        seller: "Student Seller",
+      });
+
+      toast.success("Listing posted!", {
+        description: "Your item is now live.",
+      });
+
+      setTimeout(() => navigate({ to: "/browse" }), 700);
+    } catch (error: any) {
+      toast.error(error.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <SiteShell>
@@ -104,37 +163,65 @@ function SellPage() {
 
           <form onSubmit={onSubmit} className="mt-10 grid lg:grid-cols-[1fr_320px] gap-6">
             <div className="grid gap-6 p-6 sm:p-8 rounded-3xl glass-strong border shadow-soft">
-              {/* Drag-drop image upload */}
               <Field label="Photos">
                 <div
-                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setDragOver(true);
+                  }}
                   onDragLeave={() => setDragOver(false)}
-                  onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
-                  className={`relative rounded-2xl border-2 border-dashed transition-all ${dragOver ? "border-primary bg-primary/5 scale-[1.01]" : "border-border hover:border-primary/60"}`}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDragOver(false);
+                    handleFiles(e.dataTransfer.files);
+                  }}
+                  className={`relative rounded-2xl border-2 border-dashed transition-all ${
+                    dragOver ? "border-primary bg-primary/5 scale-[1.01]" : "border-border hover:border-primary/60"
+                  }`}
                 >
                   <label className="block aspect-[3/1] cursor-pointer">
                     <div className="h-full w-full grid place-items-center text-center p-6">
                       <div>
                         <div className="w-12 h-12 mx-auto rounded-2xl bg-primary/10 grid place-items-center">
-                          {dragOver ? <Upload className="w-5 h-5 text-primary animate-bounce" /> : <Camera className="w-5 h-5 text-primary" />}
+                          {dragOver ? (
+                            <Upload className="w-5 h-5 text-primary animate-bounce" />
+                          ) : (
+                            <Camera className="w-5 h-5 text-primary" />
+                          )}
                         </div>
                         <div className="mt-3 text-sm font-semibold">
                           {dragOver ? "Drop to upload" : "Drag & drop or click to upload"}
                         </div>
-                        <div className="text-xs text-muted-foreground">Up to 6 images. The first one is your cover.</div>
+                        <div className="text-xs text-muted-foreground">
+                          Up to 6 images. The first one is your cover.
+                        </div>
                       </div>
                     </div>
-                    <input type="file" multiple accept="image/*" className="hidden" onChange={(e) => handleFiles(e.target.files)} />
+                    <input
+                      type="file"
+                      multiple
+                      accept="image/*"
+                      className="hidden"
+                      onChange={(e) => handleFiles(e.target.files)}
+                    />
                   </label>
                 </div>
-                {/* Preview carousel */}
+
                 {images.length > 0 && (
                   <div className="mt-3 flex gap-3 overflow-x-auto no-scrollbar pb-1">
                     {images.map((src, i) => (
                       <div key={i} className="relative shrink-0 w-24 h-24 rounded-xl overflow-hidden border group">
                         <img src={src} alt="" className="w-full h-full object-cover" />
-                        {i === 0 && <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-primary text-primary-foreground">COVER</span>}
-                        <button type="button" onClick={() => removeImage(i)} className="absolute top-1 right-1 w-5 h-5 rounded-full bg-foreground/80 text-background grid place-items-center opacity-0 group-hover:opacity-100 transition-opacity">
+                        {i === 0 && (
+                          <span className="absolute bottom-1 left-1 px-1.5 py-0.5 rounded text-[9px] font-bold bg-primary text-primary-foreground">
+                            COVER
+                          </span>
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => removeImage(i)}
+                          className="absolute top-1 right-1 w-5 h-5 rounded-full bg-foreground/80 text-background grid place-items-center opacity-0 group-hover:opacity-100 transition-opacity"
+                        >
                           <X className="w-3 h-3" />
                         </button>
                       </div>
@@ -147,6 +234,7 @@ function SellPage() {
                 <Field label="Title" required>
                   <Input value={form.title} onChange={(v) => update("title", v)} placeholder="e.g. MacBook Air M2" />
                 </Field>
+
                 <Field label="Price" required>
                   <div className="relative">
                     <IndianRupee className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -165,6 +253,7 @@ function SellPage() {
                 <Field label="Category">
                   <Select value={form.category} onChange={(v) => update("category", v)} options={categories.map((c) => c.name)} />
                 </Field>
+
                 <Field label="Condition">
                   <Select value={form.condition} onChange={(v) => update("condition", v)} options={["New", "Like New", "Excellent", "Good", "Fair"]} />
                 </Field>
@@ -187,10 +276,12 @@ function SellPage() {
               <div className="flex flex-col sm:flex-row gap-3 pt-2">
                 <button
                   type="submit"
-                  className="flex-1 h-12 rounded-xl gradient-primary text-primary-foreground font-semibold shadow-elegant hover:shadow-glow hover:-translate-y-0.5 transition-all"
+                  disabled={isSubmitting}
+                  className="flex-1 h-12 rounded-xl gradient-primary text-primary-foreground font-semibold shadow-elegant hover:shadow-glow hover:-translate-y-0.5 transition-all disabled:opacity-60"
                 >
-                  Publish listing
+                  {isSubmitting ? "Publishing..." : "Publish listing"}
                 </button>
+
                 <button
                   type="button"
                   onClick={() => navigate({ to: "/browse" })}
@@ -201,7 +292,6 @@ function SellPage() {
               </div>
             </div>
 
-            {/* AI suggested pricing sidebar */}
             <aside className="space-y-4 lg:sticky lg:top-24 self-start">
               <div className="relative p-5 rounded-3xl bg-card border shadow-soft overflow-hidden">
                 <div className="absolute -top-10 -right-10 w-32 h-32 rounded-full bg-primary/20 blur-3xl" />
@@ -210,7 +300,9 @@ function SellPage() {
                     <Wand2 className="w-3 h-3" /> AI SUGGESTED
                   </div>
                   <h3 className="mt-3 font-semibold">Smart price range</h3>
-                  <p className="text-xs text-muted-foreground mt-1">Based on similar {form.condition.toLowerCase()} {form.category.toLowerCase()} on campus.</p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Based on similar {form.condition.toLowerCase()} {form.category.toLowerCase()} on campus.
+                  </p>
                   <div className="mt-4 p-4 rounded-2xl bg-gradient-to-br from-primary/10 to-primary-glow/10 border border-primary/20">
                     <div className="text-3xl font-bold gradient-text tracking-tight">
                       ₹{aiSuggested.mid.toLocaleString("en-IN")}
@@ -279,7 +371,9 @@ function Select({ value, onChange, options }: { value: string; onChange: (v: str
       className="w-full h-12 px-4 rounded-xl bg-background border outline-none focus:border-primary focus:ring-4 focus:ring-primary/10 transition-all text-sm"
     >
       {options.map((o) => (
-        <option key={o} value={o}>{o}</option>
+        <option key={o} value={o}>
+          {o}
+        </option>
       ))}
     </select>
   );

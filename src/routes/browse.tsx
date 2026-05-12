@@ -1,9 +1,11 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Search, SlidersHorizontal, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { SiteShell } from "@/components/site-shell";
 import { ListingCard } from "@/components/listing-card";
-import { categories, listings, type Category } from "@/lib/data";
+import { categories, type Category } from "@/lib/data";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/firebase";
 
 const allCategories = ["All", ...categories.map((c) => c.name)] as const;
 type CatFilter = (typeof allCategories)[number];
@@ -46,6 +48,40 @@ function BrowsePage() {
   const navigate = Route.useNavigate();
   const [query, setQuery] = useState(q);
   const [showFilters, setShowFilters] = useState(false);
+  const [listings, setListings] = useState<any[]>([]);
+  useEffect(() => {
+  const fetchListings = async () => {
+    try {
+      const querySnapshot = await getDocs(collection(db, "listings"));
+
+      const data = querySnapshot.docs.map((doc) => {
+  const item: any = doc.data();
+
+  return {
+    id: doc.id,
+    title: item.title || "Untitled listing",
+    description: item.description || "",
+    price: Number(item.price) || 0,
+    category: item.category || "Others",
+    condition: item.condition || "Good",
+    location: item.location || "Campus",
+    image: item.images?.[0] || "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800",
+    images: item.images || [],
+    seller: item.seller || "Student Seller",
+    postedAt: "Just now",
+    rating: 4.5,
+    badges: ["verified"],
+  };
+});
+
+      setListings(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  fetchListings();
+}, []);
 
   const results = useMemo(() => {
     let r = listings.slice();
