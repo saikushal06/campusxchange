@@ -1,8 +1,15 @@
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
 import { Eye, Flame, Heart, MapPin, ShieldCheck, Sparkles, Star, Tag, Trash2, Pencil } from "lucide-react";
-import { useState } from "react";
+import { auth, db } from "@/firebase";
+import {
+  deleteDoc,
+  doc,
+  getDoc,
+  setDoc,
+} from "firebase/firestore";
 import type { Badge, Listing } from "@/lib/data";
+import { useEffect, useState } from "react";
 
 const badgeMap: Record<Badge, { label: string; icon: React.ComponentType<{ className?: string }>; cls: string }> = {
   verified: { label: "Verified Seller", icon: ShieldCheck, cls: "bg-primary/90 text-primary-foreground" },
@@ -23,11 +30,61 @@ onEdit,
   onEdit?: (id: string) => void;
 }) {
   const [saved, setSaved] = useState(false);
+const user = auth.currentUser;
   const [hover, setHover] = useState(false);
   const discount = listing.originalPrice
     ? Math.round(((listing.originalPrice - listing.price) / listing.originalPrice) * 100)
     : 0;
   const primaryBadge = listing.badges?.[0];
+  useEffect(() => {
+  const checkWishlist = async () => {
+    if (!user) return;
+
+    const ref = doc(
+      db,
+      "users",
+      user.uid,
+      "wishlist",
+      listing.id
+    );
+
+    const snap = await getDoc(ref);
+
+    setSaved(snap.exists());
+  };
+
+  checkWishlist();
+}, [user, listing.id]);
+const toggleWishlist = async (
+  e: React.MouseEvent
+) => {
+  e.preventDefault();
+
+  if (!user) {
+    alert("Please login first");
+    return;
+  }
+
+  const ref = doc(
+    db,
+    "users",
+    user.uid,
+    "wishlist",
+    listing.id
+  );
+
+  if (saved) {
+    await deleteDoc(ref);
+    setSaved(false);
+  } else {
+    await setDoc(ref, {
+      ...listing,
+      savedAt: new Date(),
+    });
+
+    setSaved(true);
+  }
+};
 
   return (
     <motion.div
@@ -90,10 +147,7 @@ onEdit,
   </button>
 )}
           <motion.button
-            onClick={(e) => {
-              e.preventDefault();
-              setSaved((s) => !s);
-            }}
+            onClick={toggleWishlist}
             whileTap={{ scale: 0.85 }}
             aria-label="Save"
             className="absolute top-3 right-3 w-9 h-9 grid place-items-center rounded-full glass-strong shadow-soft hover:scale-110 transition-transform"

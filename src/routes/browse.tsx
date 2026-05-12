@@ -15,6 +15,10 @@ interface BrowseSearch {
   category: CatFilter;
   q: string;
   sort: SortOpt;
+  min?: string;
+  max?: string;
+  condition?: string;
+  location?: string;
 }
 
 export const Route = createFileRoute("/browse")({
@@ -48,6 +52,10 @@ function BrowsePage() {
   const navigate = Route.useNavigate();
   const [query, setQuery] = useState(q);
   const [showFilters, setShowFilters] = useState(false);
+  const [minPrice, setMinPrice] = useState("");
+const [maxPrice, setMaxPrice] = useState("");
+const [condition, setCondition] = useState("");
+const [location, setLocation] = useState("");
   const [listings, setListings] = useState<any[]>([]);
   useEffect(() => {
   const fetchListings = async () => {
@@ -93,11 +101,34 @@ function BrowsePage() {
           l.title.toLowerCase().includes(ql) || l.description.toLowerCase().includes(ql),
       );
     }
+    if (minPrice) {
+  r = r.filter((l) => l.price >= Number(minPrice));
+}
+
+if (maxPrice) {
+  r = r.filter((l) => l.price <= Number(maxPrice));
+}
+
+if (condition) {
+  r = r.filter(
+    (l) =>
+      l.condition.toLowerCase() ===
+      condition.toLowerCase()
+  );
+}
+
+if (location) {
+  r = r.filter((l) =>
+    l.location
+      .toLowerCase()
+      .includes(location.toLowerCase())
+  );
+}
     if (sort === "low") r.sort((a, b) => a.price - b.price);
     if (sort === "high") r.sort((a, b) => b.price - a.price);
     if (sort === "rating") r.sort((a, b) => b.rating - a.rating);
     return r;
-  }, [category, query, sort]);
+  }, [category, query, sort, minPrice, maxPrice, condition, location, listings]);
 
   return (
     <SiteShell>
@@ -158,6 +189,42 @@ function BrowsePage() {
               <option value="rating">Top rated</option>
             </select>
           </div>
+          <div className="mt-5 grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+  <input
+    type="number"
+    placeholder="Min price"
+    value={minPrice}
+    onChange={(e) => setMinPrice(e.target.value)}
+    className="h-11 rounded-2xl border bg-card px-4"
+  />
+
+  <input
+    type="number"
+    placeholder="Max price"
+    value={maxPrice}
+    onChange={(e) => setMaxPrice(e.target.value)}
+    className="h-11 rounded-2xl border bg-card px-4"
+  />
+
+  <select
+    value={condition}
+    onChange={(e) => setCondition(e.target.value)}
+    className="h-11 rounded-2xl border bg-card px-4"
+  >
+    <option value="">All Conditions</option>
+    <option value="New">New</option>
+    <option value="Like New">Like New</option>
+    <option value="Good">Good</option>
+    <option value="Used">Used</option>
+  </select>
+
+  <input
+    placeholder="Location"
+    value={location}
+    onChange={(e) => setLocation(e.target.value)}
+    className="h-11 rounded-2xl border bg-card px-4"
+  />
+</div>
 
           <div className={`mt-5 flex flex-wrap gap-2 ${showFilters ? "" : "hidden lg:flex"}`}>
             {allCategories.map((c) => (

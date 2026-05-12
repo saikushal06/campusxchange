@@ -56,42 +56,65 @@ function ProfilePage() {
   const user = auth.currentUser;
   const navigate = useNavigate();
   const [myListings, setMyListings] = useState<any[]>([]);
-  const [saved] = useState<any[]>([]);
+  const [saved, setSaved] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchListings = async () => {
-      if (!user) return;
+  const fetchListings = async () => {
+    if (!user) return;
 
-      try {
-        const q = query(
-          collection(db, "listings"),
-          where("userId", "==", user.uid)
-        );
+    try {
+      const q = query(
+        collection(db, "listings"),
+        where("userId", "==", user.uid)
+      );
 
-        const querySnapshot = await getDocs(q);
+      const querySnapshot = await getDocs(q);
 
-        const data = querySnapshot.docs.map((docItem) => ({
-          id: docItem.id,
-          ...docItem.data(),
-          image:
-            (docItem.data() as any).images?.[0] ||
-            "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800",
-          seller: user.displayName || "Student Seller",
-          sellerAvatar: user.email?.charAt(0).toUpperCase() || "S",
-          postedAt: "Just now",
-          rating: 4.8,
-          badges: ["verified"],
-        }));
+      const data = querySnapshot.docs.map((docItem) => ({
+        id: docItem.id,
+        ...docItem.data(),
+        image:
+          (docItem.data() as any).images?.[0] ||
+          "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800",
+        seller: user.displayName || "Student Seller",
+        sellerAvatar:
+          user.email?.charAt(0).toUpperCase() || "S",
+        postedAt: "Just now",
+        rating: 4.8,
+        badges: ["verified"],
+      }));
 
-        setMyListings(data);
-      } catch (error) {
-        console.error(error);
-      }
-    };
+      setMyListings(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
-    fetchListings();
-  }, [user]);
+  fetchListings();
+}, [user]);
 
+useEffect(() => {
+  const fetchSavedItems = async () => {
+    if (!user) return;
+
+    try {
+      const querySnapshot = await getDocs(
+        collection(db, "users", user.uid, "wishlist")
+      );
+
+      const data = querySnapshot.docs.map((docItem) => ({
+        id: docItem.id,
+        ...docItem.data(),
+      }));
+
+      setSaved(data);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  fetchSavedItems();
+}, [user]);
   const handleDelete = async (id: string) => {
     try {
       await deleteDoc(doc(db, "listings", id));
@@ -253,8 +276,8 @@ function ProfilePage() {
       <Section title="Saved items" icon={<Heart className="w-5 h-5 text-rose-500 fill-rose-500" />}>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {saved.map((l, i) => (
-            <ListingCard key={l.id} listing={l} index={i} />
-          ))}
+  <ListingCard key={l.id} listing={l} index={i} />
+))}
         </div>
       </Section>
     </SiteShell>
