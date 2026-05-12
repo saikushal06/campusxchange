@@ -154,3 +154,42 @@
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { scrollbar-width: none; }
 }
+
+@layer utilities {
+  .shimmer {
+    background: linear-gradient(90deg, var(--muted) 0%, color-mix(in oklab, var(--muted) 50%, var(--background)) 50%, var(--muted) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s linear infinite;
+  }
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .glow-orb {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(80px);
+    opacity: 0.55;
+    pointer-events: none;
+  }
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+  .animate-pulse-glow {
+    animation: pulseGlow 4s ease-in-out infinite;
+  }
+  @keyframes pulseGlow {
+    0%, 100% { opacity: 0.4; transform: scale(1); }
+    50% { opacity: 0.75; transform: scale(1.08); }
+  }
+  .divider-fade {
+    height: 1px;
+    background: linear-gradient(to right, transparent, var(--border), transparent);
+  }
+  .text-balance { text-wrap: balance; }
+}
