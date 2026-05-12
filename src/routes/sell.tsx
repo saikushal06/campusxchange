@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { SiteShell } from "@/components/site-shell";
 import { categories } from "@/lib/data";
 import { addDoc, collection } from "firebase/firestore";
-import { db } from "@/firebase";
+import { auth, db } from "@/firebase";
 
 export const Route = createFileRoute("/sell")({
   head: () => ({
@@ -130,6 +130,7 @@ function SellPage() {
         images: uploadedImages,
         createdAt: new Date(),
         seller: "Student Seller",
+        userId: auth.currentUser?.uid,
       });
 
       toast.success("Listing posted!", {

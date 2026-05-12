@@ -1,6 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { motion, AnimatePresence } from "framer-motion";
-import { Eye, Flame, Heart, MapPin, ShieldCheck, Sparkles, Star, Tag } from "lucide-react";
+import { Eye, Flame, Heart, MapPin, ShieldCheck, Sparkles, Star, Tag, Trash2 } from "lucide-react";
 import { useState } from "react";
 import type { Badge, Listing } from "@/lib/data";
 
@@ -11,7 +11,15 @@ const badgeMap: Record<Badge, { label: string; icon: React.ComponentType<{ class
   trusted: { label: "Campus Trusted", icon: Sparkles, cls: "bg-amber-500/90 text-white" },
 };
 
-export function ListingCard({ listing, index = 0 }: { listing: Listing; index?: number }) {
+export function ListingCard({
+  listing,
+  index = 0,
+  onDelete,
+}: {
+  listing: Listing;
+  index?: number;
+  onDelete?: (id: string) => void;
+}) {
   const [saved, setSaved] = useState(false);
   const [hover, setHover] = useState(false);
   const discount = listing.originalPrice
@@ -57,6 +65,17 @@ export function ListingCard({ listing, index = 0 }: { listing: Listing; index?: 
           </div>
 
           {/* Wishlist */}
+          {onDelete && (
+  <button
+    onClick={(e) => {
+      e.preventDefault();
+      onDelete(listing.id);
+    }}
+    className="absolute bottom-3 right-3 w-9 h-9 grid place-items-center rounded-full bg-red-500 text-white shadow-lg hover:scale-110 transition-transform"
+  >
+    <Trash2 className="w-4 h-4" />
+  </button>
+)}
           <motion.button
             onClick={(e) => {
               e.preventDefault();

@@ -1,8 +1,30 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Award, CheckCircle2, Crown, Heart, MapPin, MessageSquare, Settings, ShieldCheck, Sparkles, Star, Trophy, Zap } from "lucide-react";
+import {
+  Award,
+  CheckCircle2,
+  Crown,
+  Heart,
+  MapPin,
+  MessageSquare,
+  Settings,
+  ShieldCheck,
+  Sparkles,
+  Star,
+  Trophy,
+  Zap,
+} from "lucide-react";
+import { useEffect, useState } from "react";
 import { SiteShell } from "@/components/site-shell";
 import { ListingCard } from "@/components/listing-card";
-import { listings } from "@/lib/data";
+import {
+  collection,
+  deleteDoc,
+  doc,
+  getDocs,
+  query,
+  where,
+} from "firebase/firestore";
+import { auth, db } from "@/firebase";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -31,12 +53,56 @@ const reviewBreakdown = [
 ];
 
 function ProfilePage() {
-  const myListings = listings.slice(0, 3);
-  const saved = listings.slice(3, 6);
+  const user = auth.currentUser;
+
+  const [myListings, setMyListings] = useState<any[]>([]);
+  const [saved] = useState<any[]>([]);
+
+  useEffect(() => {
+    const fetchListings = async () => {
+      if (!user) return;
+
+      try {
+        const q = query(
+          collection(db, "listings"),
+          where("userId", "==", user.uid)
+        );
+
+        const querySnapshot = await getDocs(q);
+
+        const data = querySnapshot.docs.map((docItem) => ({
+          id: docItem.id,
+          ...docItem.data(),
+          image:
+            (docItem.data() as any).images?.[0] ||
+            "https://images.unsplash.com/photo-1516321318423-f06f85e504b3?w=800",
+          seller: user.displayName || "Student Seller",
+          sellerAvatar: user.email?.charAt(0).toUpperCase() || "S",
+          postedAt: "Just now",
+          rating: 4.8,
+          badges: ["verified"],
+        }));
+
+        setMyListings(data);
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    fetchListings();
+  }, [user]);
+
+  const handleDelete = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, "listings", id));
+      setMyListings((prev) => prev.filter((item) => item.id !== id));
+    } catch (error) {
+      console.error(error);
+    }
+  };
 
   return (
     <SiteShell>
-      {/* Cover banner with glow */}
       <section className="relative">
         <div className="h-56 sm:h-64 gradient-primary relative overflow-hidden">
           <div className="absolute inset-0 opacity-40 mix-blend-overlay">
@@ -50,15 +116,18 @@ function ProfilePage() {
           <div className="p-6 sm:p-8 rounded-3xl glass-strong border shadow-elegant flex flex-col sm:flex-row items-start sm:items-center gap-6">
             <div className="relative">
               <div className="w-24 h-24 rounded-3xl gradient-primary grid place-items-center text-primary-foreground text-3xl font-bold shadow-elegant ring-4 ring-card">
-                AS
+                {user?.email?.charAt(0).toUpperCase() || "S"}
               </div>
               <div className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-primary grid place-items-center ring-4 ring-card">
                 <CheckCircle2 className="w-4 h-4 text-primary-foreground" />
               </div>
             </div>
+
             <div className="flex-1 min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-2xl font-bold">Alex Sharma</h1>
+                <h1 className="text-2xl font-bold">
+                  {user?.displayName || "Campus User"}
+                </h1>
                 <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[11px] font-bold">
                   <ShieldCheck className="w-3 h-3" /> Verified Seller
                 </span>
@@ -66,22 +135,24 @@ function ProfilePage() {
                   <Crown className="w-3 h-3" /> Level 8 · Gold
                 </span>
               </div>
+
               <div className="mt-1.5 text-sm text-muted-foreground flex flex-wrap items-center gap-3">
                 <span className="flex items-center gap-1">
                   <Star className="w-3.5 h-3.5 fill-amber-500 text-amber-500" />
-                  <span className="font-semibold text-foreground">4.9</span> · 32 sales
+                  <span className="font-semibold text-foreground">4.9</span> · {myListings.length} listings
                 </span>
                 <span className="flex items-center gap-1">
-                  <MapPin className="w-3.5 h-3.5" /> IIT Delhi · Block 4
+                  <MapPin className="w-3.5 h-3.5" /> Campus
                 </span>
                 <span className="flex items-center gap-1">
-                  <MessageSquare className="w-3.5 h-3.5" /> Replies in 12 min
+                  <MessageSquare className="w-3.5 h-3.5" /> Replies fast
                 </span>
               </div>
+
               <p className="mt-3 text-sm text-muted-foreground max-w-lg">
-                CSE final year. Selling stuff I don't need anymore. Quick replies, fair prices, easy meetups.
+                {user?.email}
               </p>
-              {/* Level progress */}
+
               <div className="mt-4 max-w-sm">
                 <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1.5">
                   <span className="font-semibold">Level 8 — Gold Seller</span>
@@ -92,8 +163,12 @@ function ProfilePage() {
                 </div>
               </div>
             </div>
+
             <div className="flex gap-2">
-              <Link to="/sell" className="h-10 px-5 rounded-xl gradient-primary text-primary-foreground text-sm font-semibold inline-flex items-center shadow-soft hover:shadow-glow transition-all">
+              <Link
+                to="/sell"
+                className="h-10 px-5 rounded-xl gradient-primary text-primary-foreground text-sm font-semibold inline-flex items-center shadow-soft hover:shadow-glow transition-all"
+              >
                 + New listing
               </Link>
               <button className="h-10 w-10 grid place-items-center rounded-xl border bg-background hover:bg-secondary transition-colors">
@@ -102,11 +177,10 @@ function ProfilePage() {
             </div>
           </div>
 
-          {/* Stats + Achievements + Reviews */}
           <div className="mt-6 grid lg:grid-cols-3 gap-4">
             <div className="lg:col-span-1 grid grid-cols-3 gap-3">
               {[
-                { v: "32", l: "Sales" },
+                { v: myListings.length.toString(), l: "Listings" },
                 { v: "₹1.2L", l: "Earned" },
                 { v: "4.9", l: "Rating" },
               ].map((s) => (
@@ -117,7 +191,6 @@ function ProfilePage() {
               ))}
             </div>
 
-            {/* Achievements */}
             <div className="p-5 rounded-2xl bg-card border">
               <div className="flex items-center gap-2 mb-4">
                 <Award className="w-4 h-4 text-primary" />
@@ -135,7 +208,6 @@ function ProfilePage() {
               </div>
             </div>
 
-            {/* Review breakdown */}
             <div className="p-5 rounded-2xl bg-card border">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="font-semibold text-sm">Review breakdown</h3>
@@ -161,7 +233,12 @@ function ProfilePage() {
       <Section title="Your active listings">
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
           {myListings.map((l, i) => (
-            <ListingCard key={l.id} listing={l} index={i} />
+            <ListingCard
+              key={l.id}
+              listing={l}
+              index={i}
+              onDelete={handleDelete}
+            />
           ))}
         </div>
       </Section>
@@ -177,7 +254,15 @@ function ProfilePage() {
   );
 }
 
-function Section({ title, children, icon }: { title: string; children: React.ReactNode; icon?: React.ReactNode }) {
+function Section({
+  title,
+  children,
+  icon,
+}: {
+  title: string;
+  children: React.ReactNode;
+  icon?: React.ReactNode;
+}) {
   return (
     <section className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 mt-14">
       <div className="flex items-center gap-2 mb-6">
