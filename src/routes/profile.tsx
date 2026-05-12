@@ -25,6 +25,7 @@ import {
   where,
 } from "firebase/firestore";
 import { auth, db } from "@/firebase";
+import { signOut } from "firebase/auth";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -130,6 +131,11 @@ useEffect(() => {
   });
 };
 
+const handleLogout = async () => {
+  await signOut(auth);
+
+  navigate({ to: "/login" });
+};
   return (
     <SiteShell>
       <section className="relative">
@@ -200,9 +206,12 @@ useEffect(() => {
               >
                 + New listing
               </Link>
-              <button className="h-10 w-10 grid place-items-center rounded-xl border bg-background hover:bg-secondary transition-colors">
-                <Settings className="w-4 h-4" />
-              </button>
+              <button
+  onClick={handleLogout}
+  className="h-10 px-4 rounded-xl border bg-background hover:bg-secondary transition-colors text-sm font-semibold"
+>
+  Logout
+</button>
             </div>
           </div>
 
