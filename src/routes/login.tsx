@@ -4,6 +4,8 @@ import { ArrowRight, GraduationCap, Lock, Mail, ShieldCheck, Sparkles } from "lu
 import { useState } from "react";
 import { toast } from "sonner";
 import { useTheme } from "@/components/theme-provider";
+import { signInWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/firebase";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -80,11 +82,21 @@ function LoginPage() {
           <p className="mt-2 text-muted-foreground">Sign in with your college email to continue.</p>
 
           <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              toast.success("Signed in", { description: "Welcome to CampusXchange." });
-              setTimeout(() => navigate({ to: "/" }), 600);
-            }}
+            onSubmit={async (e) => {
+  e.preventDefault();
+
+  try {
+    await signInWithEmailAndPassword(auth, email, password);
+
+    toast.success("Signed in", {
+      description: "Welcome back to CampusXchange.",
+    });
+
+    setTimeout(() => navigate({ to: "/" }), 600);
+  } catch (error: any) {
+    toast.error(error.message);
+  }
+}}
             className="mt-8 space-y-4"
           >
             <label className="block">

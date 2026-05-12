@@ -3,6 +3,8 @@ import { motion } from "framer-motion";
 import { ArrowRight, GraduationCap, Lock, Mail, User } from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
+import { createUserWithEmailAndPassword } from "firebase/auth";
+import { auth } from "@/firebase";
 
 export const Route = createFileRoute("/signup")({
   head: () => ({
@@ -37,11 +39,25 @@ function SignupPage() {
           <p className="mt-2 text-muted-foreground">Use your college email — we'll keep things student-only.</p>
 
           <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              toast.success("Account created!", { description: "Welcome to CampusXchange." });
-              setTimeout(() => navigate({ to: "/" }), 600);
-            }}
+            onSubmit={async (e) => {
+  e.preventDefault();
+
+  try {
+    await createUserWithEmailAndPassword(
+      auth,
+      form.email,
+      form.password
+    );
+
+    toast.success("Account created!", {
+      description: "Welcome to CampusXchange.",
+    });
+
+    setTimeout(() => navigate({ to: "/" }), 600);
+  } catch (error: any) {
+    toast.error(error.message);
+  }
+}}
             className="mt-8 space-y-4"
           >
             <Input icon={User} label="Full name" placeholder="Alex Sharma" value={form.name} onChange={(v) => setForm({ ...form, name: v })} />
