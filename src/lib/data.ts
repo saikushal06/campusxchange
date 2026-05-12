@@ -23,10 +23,13 @@ export const categories: { name: Category; emoji: string; color: string }[] = [
   { name: "Others", emoji: "✨", color: "from-yellow-400/30 to-amber-500/20" },
 ];
 
+export type Badge = "verified" | "trending" | "sold" | "trusted";
+
 export interface Listing {
   id: string;
   title: string;
   price: number;
+  originalPrice?: number;
   category: Category;
   image: string;
   seller: string;
@@ -37,6 +40,7 @@ export interface Listing {
   description: string;
   condition: string;
   featured?: boolean;
+  badges?: Badge[];
 }
 
 export const listings: Listing[] = [
