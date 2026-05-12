@@ -197,3 +197,5 @@ export const faqs: { q: string; a: string }[] = [
   { q: "What if a buyer or seller doesn't show up?", a: "Both parties can rate each other after every deal. Repeat no-shows are flagged and removed from the platform automatically." },
   { q: "Can I sell services like tutoring or design?", a: "Absolutely. Use the 'Others' category — many students earn pocket money offering peer tutoring, photography, and design gigs." },
 ];
+
+export const getListing = (id: string) => listings.find((l) => l.id === id);
