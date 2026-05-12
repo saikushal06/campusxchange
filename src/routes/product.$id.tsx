@@ -1,4 +1,4 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { motion } from "framer-motion";
 import {
   ArrowLeft,
@@ -15,8 +15,8 @@ import {
 import { useEffect, useState } from "react";
 import { SiteShell } from "@/components/site-shell";
 import { ListingCard } from "@/components/listing-card";
-import { collection, doc, getDoc, getDocs } from "firebase/firestore";
-import { db } from "@/firebase";
+import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from "firebase/firestore";
+import { auth, db } from "@/firebase";
 
 export const Route = createFileRoute("/product/$id")({
   component: ProductPage,
@@ -25,6 +25,7 @@ export const Route = createFileRoute("/product/$id")({
 function formatListing(id: string, item: any) {
   return {
     id,
+    userId: item.userId || "",
     title: item.title || "Untitled listing",
     description: item.description || "",
     price: Number(item.price) || 0,
@@ -45,7 +46,7 @@ function formatListing(id: string, item: any) {
 
 function ProductPage() {
   const { id } = Route.useParams();
-
+  const navigate = useNavigate();
   const [listing, setListing] = useState<any>(null);
   const [related, setRelated] = useState<any[]>([]);
   const [saved, setSaved] = useState(false);
@@ -92,7 +93,46 @@ function ProductPage() {
       </SiteShell>
     );
   }
+const handleChatWithSeller = async () => {
+  const user = auth.currentUser;
 
+  if (!user) {
+    navigate({ to: "/login" });
+    return;
+  }
+
+  if (!listing.userId) {
+    alert("Seller details are missing for this listing.");
+    return;
+  }
+
+  if (user.uid === listing.userId) {
+    alert("This is your own listing.");
+    return;
+  }
+
+  const chatId = `${listing.id}_${user.uid}_${listing.userId}`;
+
+  await setDoc(
+    doc(db, "chats", chatId),
+    {
+      listingId: listing.id,
+      listingTitle: listing.title,
+      listingImage: listing.image,
+      buyerId: user.uid,
+      buyerEmail: user.email,
+      sellerId: listing.userId,
+      sellerName: listing.seller,
+      participants: [user.uid, listing.userId],
+      lastMessage: "",
+      updatedAt: serverTimestamp(),
+      createdAt: serverTimestamp(),
+    },
+    { merge: true }
+  );
+  localStorage.setItem("activeChatId", chatId);
+  navigate({ to: "/messages" });
+};
   return (
     <SiteShell>
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8">
@@ -176,8 +216,10 @@ function ProductPage() {
             </div>
 
             <div className="mt-6 flex gap-3">
-              <button className="flex-1 inline-flex items-center justify-center gap-2 h-12 rounded-2xl gradient-primary text-primary-foreground font-semibold shadow-elegant hover:shadow-glow transition-all">
-                <MessageCircle className="w-4 h-4" /> Chat with seller
+              <button
+  onClick={handleChatWithSeller}
+  className="flex-1 inline-flex items-center justify-center gap-2 h-12 rounded-2xl gradient-primary text-primary-foreground font-semibold shadow-elegant hover:shadow-glow transition-all"
+>       <MessageCircle className="w-4 h-4" /> Chat with seller
               </button>
               <button className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-card border hover:border-primary transition-colors">
                 <Phone className="w-4 h-4" />
