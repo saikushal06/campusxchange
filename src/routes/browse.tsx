@@ -1,26 +1,41 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { zodValidator, fallback } from "@tanstack/zod-adapter";
-import { z } from "zod";
 import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { SiteShell } from "@/components/site-shell";
-import { ListingCard, ListingCardSkeleton } from "@/components/listing-card";
+import { ListingCard } from "@/components/listing-card";
 import { categories, listings, type Category } from "@/lib/data";
 
 const allCategories = ["All", ...categories.map((c) => c.name)] as const;
+type CatFilter = (typeof allCategories)[number];
+type SortOpt = "newest" | "low" | "high" | "rating";
 
-const searchSchema = z.object({
-  category: fallback(z.enum(allCategories as unknown as [string, ...string[]]), "All").default("All"),
-  q: fallback(z.string(), "").default(""),
-  sort: fallback(z.enum(["newest", "low", "high", "rating"]), "newest").default("newest"),
-});
+interface BrowseSearch {
+  category: CatFilter;
+  q: string;
+  sort: SortOpt;
+}
 
 export const Route = createFileRoute("/browse")({
-  validateSearch: zodValidator(searchSchema),
+  validateSearch: (search: Record<string, unknown>): BrowseSearch => {
+    const cat = search.category as string | undefined;
+    const sort = search.sort as string | undefined;
+    return {
+      category: (allCategories as readonly string[]).includes(cat ?? "")
+        ? (cat as CatFilter)
+        : "All",
+      q: typeof search.q === "string" ? search.q : "",
+      sort: ["newest", "low", "high", "rating"].includes(sort ?? "")
+        ? (sort as SortOpt)
+        : "newest",
+    };
+  },
   head: () => ({
     meta: [
       { title: "Browse Listings — CampusXchange" },
-      { name: "description", content: "Browse verified student listings — books, gadgets, hostel rooms and more." },
+      {
+        name: "description",
+        content: "Browse verified student listings — books, gadgets, hostel rooms and more.",
+      },
     ],
   }),
   component: BrowsePage,
@@ -37,7 +52,10 @@ function BrowsePage() {
     if (category !== "All") r = r.filter((l) => l.category === (category as Category));
     if (query) {
       const ql = query.toLowerCase();
-      r = r.filter((l) => l.title.toLowerCase().includes(ql) || l.description.toLowerCase().includes(ql));
+      r = r.filter(
+        (l) =>
+          l.title.toLowerCase().includes(ql) || l.description.toLowerCase().includes(ql),
+      );
     }
     if (sort === "low") r.sort((a, b) => a.price - b.price);
     if (sort === "high") r.sort((a, b) => b.price - a.price);
@@ -60,7 +78,7 @@ function BrowsePage() {
             <form
               onSubmit={(e) => {
                 e.preventDefault();
-                navigate({ search: (s) => ({ ...s, q: query }) });
+                navigate({ search: (s: BrowseSearch) => ({ ...s, q: query }) });
               }}
               className="flex-1 flex items-center gap-2 px-4 h-12 rounded-2xl bg-card border shadow-soft"
             >
@@ -72,7 +90,13 @@ function BrowsePage() {
                 className="flex-1 bg-transparent outline-none text-sm"
               />
               {query && (
-                <button type="button" onClick={() => { setQuery(""); navigate({ search: (s) => ({ ...s, q: "" }) }); }}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setQuery("");
+                    navigate({ search: (s: BrowseSearch) => ({ ...s, q: "" }) });
+                  }}
+                >
                   <X className="w-4 h-4 text-muted-foreground" />
                 </button>
               )}
@@ -85,7 +109,11 @@ function BrowsePage() {
             </button>
             <select
               value={sort}
-              onChange={(e) => navigate({ search: (s) => ({ ...s, sort: e.target.value as "newest" }) })}
+              onChange={(e) =>
+                navigate({
+                  search: (s: BrowseSearch) => ({ ...s, sort: e.target.value as SortOpt }),
+                })
+              }
               className="h-12 px-4 rounded-2xl bg-card border text-sm font-medium outline-none"
             >
               <option value="newest">Newest</option>
@@ -100,7 +128,7 @@ function BrowsePage() {
               <Link
                 key={c}
                 to="/browse"
-                search={(s) => ({ ...s, category: c })}
+                search={(s: BrowseSearch) => ({ ...s, category: c })}
                 className={`px-4 py-2 rounded-full text-sm font-medium border transition-all ${
                   category === c
                     ? "gradient-primary text-primary-foreground border-transparent shadow-elegant"
@@ -117,7 +145,11 @@ function BrowsePage() {
       <section className="py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           {results.length === 0 ? (
-            <EmptyState onReset={() => navigate({ search: () => ({ category: "All", q: "", sort: "newest" }) })} />
+            <EmptyState
+              onReset={() =>
+                navigate({ search: () => ({ category: "All", q: "", sort: "newest" }) })
+              }
+            />
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
               {results.map((l, i) => (
@@ -150,5 +182,3 @@ function EmptyState({ onReset }: { onReset: () => void }) {
     </div>
   );
 }
-
-export const _Skeleton = ListingCardSkeleton;
