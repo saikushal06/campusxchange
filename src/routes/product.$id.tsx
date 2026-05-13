@@ -15,7 +15,16 @@ import {
 import { useEffect, useState } from "react";
 import { SiteShell } from "@/components/site-shell";
 import { ListingCard } from "@/components/listing-card";
-import { collection, doc, getDoc, getDocs, serverTimestamp, setDoc } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  doc,
+  getDoc,
+  getDocs,
+  onSnapshot,
+  serverTimestamp,
+  setDoc,
+} from "firebase/firestore";
 import { auth, db } from "@/firebase";
 
 export const Route = createFileRoute("/product/$id")({
@@ -50,6 +59,9 @@ function ProductPage() {
   const [listing, setListing] = useState<any>(null);
   const [related, setRelated] = useState<any[]>([]);
   const [saved, setSaved] = useState(false);
+  const [reviews, setReviews] = useState<any[]>([]);
+const [reviewText, setReviewText] = useState("");
+const [rating, setRating] = useState(5);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -61,7 +73,7 @@ function ProductPage() {
           setListing(null);
           return;
         }
-
+        
         const product = formatListing(docSnap.id, docSnap.data());
         setListing(product);
 
@@ -80,6 +92,23 @@ function ProductPage() {
 
     fetchProduct();
   }, [id]);
+  
+
+useEffect(() => {
+  const unsub = onSnapshot(
+    collection(db, "listings", id, "reviews"),
+    (snapshot) => {
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+
+      setReviews(data);
+    }
+  );
+
+  return () => unsub();
+}, [id]);
 
   if (!listing) {
     return (
@@ -132,6 +161,34 @@ const handleChatWithSeller = async () => {
   );
   localStorage.setItem("activeChatId", chatId);
   navigate({ to: "/messages" });
+};
+const submitReview = async () => {
+  const user = auth.currentUser;
+
+  if (!user) {
+    navigate({ to: "/login" });
+    return;
+  }
+
+  if (!reviewText.trim()) return;
+
+  try {
+    await addDoc(
+      collection(db, "listings", id, "reviews"),
+      {
+        userName:
+          user.displayName || user.email,
+        text: reviewText,
+        rating,
+        createdAt: serverTimestamp(),
+      }
+    );
+
+    setReviewText("");
+    setRating(5);
+  } catch (error) {
+    console.error(error);
+  }
 };
   return (
     <SiteShell>
@@ -254,6 +311,77 @@ const handleChatWithSeller = async () => {
             </div>
           </motion.div>
         </div>
+        <section className="mt-20">
+  <h2 className="text-2xl font-bold tracking-tight">
+    Ratings & Reviews
+  </h2>
+
+  <div className="mt-6 p-6 rounded-3xl border bg-card">
+    <div className="flex gap-2 mb-4">
+      {[1, 2, 3, 4, 5].map((s) => (
+        <button
+          key={s}
+          onClick={() => setRating(s)}
+        >
+          <Star
+            className={`w-6 h-6 ${
+              s <= rating
+                ? "fill-yellow-400 text-yellow-400"
+                : "text-muted-foreground"
+            }`}
+          />
+        </button>
+      ))}
+    </div>
+
+    <textarea
+      value={reviewText}
+      onChange={(e) =>
+        setReviewText(e.target.value)
+      }
+      placeholder="Write your review..."
+      rows={4}
+      className="w-full p-4 rounded-2xl border bg-background outline-none"
+    />
+
+    <button
+      onClick={submitReview}
+      className="mt-4 h-11 px-6 rounded-xl gradient-primary text-primary-foreground font-semibold"
+    >
+      Submit Review
+    </button>
+
+    <div className="mt-8 space-y-4">
+      {reviews.map((r) => (
+        <div
+          key={r.id}
+          className="p-4 rounded-2xl border"
+        >
+          <div className="flex items-center justify-between">
+            <h3 className="font-semibold">
+              {r.userName}
+            </h3>
+
+            <div className="flex">
+              {Array.from({
+                length: r.rating,
+              }).map((_, i) => (
+                <Star
+                  key={i}
+                  className="w-4 h-4 fill-yellow-400 text-yellow-400"
+                />
+              ))}
+            </div>
+          </div>
+
+          <p className="mt-2 text-sm text-muted-foreground">
+            {r.text}
+          </p>
+        </div>
+      ))}
+    </div>
+  </div>
+</section>
 
         {related.length > 0 && (
           <section className="mt-20">
