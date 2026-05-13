@@ -3,13 +3,16 @@ import { MessageCircle, Send } from "lucide-react";
 import { SiteShell } from "@/components/site-shell";
 import { auth, db } from "@/firebase";
 import {
-  addDoc,
-  collection,
-  onSnapshot,
-  orderBy,
-  query,
-  serverTimestamp,
-  where,
+addDoc,
+collection,
+doc,
+onSnapshot,
+orderBy,
+query,
+serverTimestamp,
+setDoc,
+updateDoc,
+where,
 } from "firebase/firestore";
 import { useEffect, useState } from "react";
 
@@ -26,6 +29,7 @@ function MessagesPage() {
   );
   const [messages, setMessages] = useState<any[]>([]);
   const [text, setText] = useState("");
+  const [typingUser, setTypingUser] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -51,6 +55,24 @@ function MessagesPage() {
 
     return () => unsub();
   }, [user]);
+  useEffect(() => {
+  if (!activeChatId) return;
+
+  const unsub = onSnapshot(
+    doc(db, "chats", activeChatId),
+    (snapshot) => {
+      const data = snapshot.data();
+
+      if (!data) return;
+
+      if (data.typingUser !== user?.uid) {
+        setTypingUser(data.typingUser || "");
+      }
+    }
+  );
+
+  return () => unsub();
+}, [activeChatId]);
 
   useEffect(() => {
     if (!activeChatId) return;
@@ -76,7 +98,23 @@ function MessagesPage() {
     setActiveChatId(id);
     localStorage.setItem("activeChatId", id);
   };
+const handleTyping = async (
+  value: string
+) => {
+  setText(value);
 
+  if (!activeChatId || !user) return;
+
+  await setDoc(
+    doc(db, "chats", activeChatId),
+    {
+      typingUser: value.trim()
+        ? user.uid
+        : "",
+    },
+    { merge: true }
+  );
+};
   const sendMessage = async () => {
     if (!text.trim()) return;
     if (!user || !activeChatId) return;
@@ -87,6 +125,13 @@ function MessagesPage() {
       senderEmail: user.email,
       createdAt: serverTimestamp(),
     });
+    await updateDoc(
+  doc(db, "chats", activeChatId),
+  {
+    typingUser: "",
+    lastMessage: text,
+  }
+);
 
     setText("");
   };
@@ -158,7 +203,11 @@ function MessagesPage() {
                 </p>
               </div>
             </div>
-
+            {typingUser && (
+  <div className="px-6 py-2 text-sm text-muted-foreground border-b">
+    Someone is typing...
+  </div>
+)}
             <div className="flex-1 overflow-y-auto p-6 space-y-4 bg-muted/10">
               {!activeChatId ? (
                 <div className="text-center text-muted-foreground mt-32">
@@ -195,7 +244,9 @@ function MessagesPage() {
             <div className="border-t p-4 flex gap-3">
               <input
                 value={text}
-                onChange={(e) => setText(e.target.value)}
+                onChange={(e) =>
+  handleTyping(e.target.value)
+}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") sendMessage();
                 }}
