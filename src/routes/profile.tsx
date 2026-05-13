@@ -58,6 +58,24 @@ function ProfilePage() {
   const navigate = useNavigate();
   const [myListings, setMyListings] = useState<any[]>([]);
   const [saved, setSaved] = useState<any[]>([]);
+  const totalEarnings = myListings.reduce(
+  (sum, item) => sum + (item.price || 0),
+  0
+);
+
+const avgPrice =
+  myListings.length > 0
+    ? Math.round(totalEarnings / myListings.length)
+    : 0;
+
+const totalSaved = saved.length;
+
+const profileStrength = Math.min(
+  100,
+  40 +
+    myListings.length * 10 +
+    totalSaved * 5
+);
 
   useEffect(() => {
   const fetchListings = async () => {
@@ -214,7 +232,47 @@ const handleLogout = async () => {
 </button>
             </div>
           </div>
+          <div className="mt-6 grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+  <div className="p-5 rounded-2xl bg-card border">
+    <div className="text-xs text-muted-foreground">
+      Total Listings
+    </div>
 
+    <div className="mt-2 text-3xl font-bold">
+      {myListings.length}
+    </div>
+  </div>
+
+  <div className="p-5 rounded-2xl bg-card border">
+    <div className="text-xs text-muted-foreground">
+      Wishlist Saves
+    </div>
+
+    <div className="mt-2 text-3xl font-bold text-rose-500">
+      {totalSaved}
+    </div>
+  </div>
+
+  <div className="p-5 rounded-2xl bg-card border">
+    <div className="text-xs text-muted-foreground">
+      Avg Listing Price
+    </div>
+
+    <div className="mt-2 text-3xl font-bold">
+      ₹{avgPrice.toLocaleString("en-IN")}
+    </div>
+  </div>
+
+  <div className="p-5 rounded-2xl bg-card border">
+    <div className="text-xs text-muted-foreground">
+      Profile Strength
+    </div>
+
+    <div className="mt-2 text-3xl font-bold text-emerald-500">
+      {profileStrength}%
+    </div>
+  </div>
+</div>
           <div className="mt-6 grid lg:grid-cols-3 gap-4">
             <div className="lg:col-span-1 grid grid-cols-3 gap-3">
               {[
