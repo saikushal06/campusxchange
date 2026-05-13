@@ -6,6 +6,8 @@ import { toast } from "sonner";
 import { useTheme } from "@/components/theme-provider";
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { auth } from "@/firebase";
+import { signInWithPopup } from "firebase/auth";
+import { googleProvider } from "@/firebase";
 
 export const Route = createFileRoute("/login")({
   head: () => ({
@@ -142,10 +144,25 @@ function LoginPage() {
             <div className="flex-1 h-px bg-border" /> OR <div className="flex-1 h-px bg-border" />
           </div>
 
-          <button className="w-full h-12 rounded-xl bg-card border font-semibold text-sm hover:bg-secondary transition-colors">
-            Continue with Google
-          </button>
+          <button
+  type="button"
+  onClick={async () => {
+    try {
+      await signInWithPopup(auth, googleProvider);
 
+      toast.success("Signed in with Google", {
+        description: "Welcome to CampusXchange.",
+      });
+
+      setTimeout(() => navigate({ to: "/" }), 600);
+    } catch (error: any) {
+      toast.error(error.message);
+    }
+  }}
+  className="w-full h-12 rounded-xl bg-card border font-semibold text-sm hover:bg-secondary transition-colors"
+>
+  Continue with Google
+</button>
           <p className="mt-8 text-sm text-center text-muted-foreground">
             New to CampusXchange?{" "}
             <Link to="/signup" className="text-primary font-semibold">

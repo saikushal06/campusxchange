@@ -1,8 +1,24 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import { motion } from "framer-motion";
-import { Heart, Menu, Moon, Plus, Search, Sun, X } from "lucide-react";
+import {
+  Bell,
+  Heart,
+  Menu,
+  Moon,
+  Plus,
+  Search,
+  Sun,
+  X,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTheme } from "./theme-provider";
+import { auth, db } from "@/firebase";
+import {
+  collectionGroup,
+  onSnapshot,
+  query,
+  where,
+} from "firebase/firestore";
 
 const nav = [
   { to: "/", label: "Home" },
@@ -14,6 +30,7 @@ const nav = [
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+  const [unread, setUnread] = useState(0);
   const { theme, toggle } = useTheme();
   const loc = useLocation();
 
@@ -25,6 +42,22 @@ export function Navbar() {
   }, []);
 
   useEffect(() => setOpen(false), [loc.pathname]);
+  useEffect(() => {
+  const user = auth.currentUser;
+
+  if (!user) return;
+
+  const q = query(
+    collectionGroup(db, "messages"),
+    where("senderId", "!=", user.uid)
+  );
+
+  const unsub = onSnapshot(q, (snapshot) => {
+    setUnread(snapshot.docs.length);
+  });
+
+  return () => unsub();
+}, []);
 
   return (
     <motion.header
@@ -84,6 +117,17 @@ export function Navbar() {
           >
             <Search className="w-4 h-4" />
           </Link>
+          <button
+  className="relative hidden sm:grid w-9 h-9 place-items-center rounded-full hover:bg-accent transition-colors"
+>
+  <Bell className="w-4 h-4" />
+
+  {unread > 0 && (
+    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold grid place-items-center">
+      {unread}
+    </span>
+  )}
+</button>
           <Link
             to="/profile"
             aria-label="Wishlist"
