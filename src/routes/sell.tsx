@@ -33,6 +33,7 @@ function SellPage() {
   const [imageFiles, setImageFiles] = useState<File[]>([]);
   const [dragOver, setDragOver] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
 
   const update = <K extends keyof typeof form>(k: K, v: string) =>
     setForm((f) => ({ ...f, [k]: v }));
@@ -51,9 +52,38 @@ function SellPage() {
   };
 
   const removeImage = (i: number) => {
-    setImages((p) => p.filter((_, idx) => idx !== i));
-    setImageFiles((p) => p.filter((_, idx) => idx !== i));
-  };
+  setImages((p) => p.filter((_, idx) => idx !== i));
+  setImageFiles((p) => p.filter((_, idx) => idx !== i));
+};
+
+const generateDescription = async () => {
+  if (!form.title) {
+    toast.error("Enter title first");
+    return;
+  }
+
+  try {
+    setAiLoading(true);
+
+    await new Promise((resolve) =>
+      setTimeout(resolve, 1200)
+    );
+
+    const generated = `Selling my ${form.condition.toLowerCase()} ${
+      form.title
+    } from the ${form.category} category. The item is well maintained and in excellent working condition. Perfect for students looking for a reliable and affordable option on campus. Available for quick pickup at ${
+      form.location || "campus"
+    }.`;
+
+    update("description", generated);
+
+    toast.success("AI description generated");
+  } catch (error) {
+    toast.error("Failed to generate description");
+  } finally {
+    setAiLoading(false);
+  }
+};
 
   const aiSuggested = useMemo(() => {
     const baseMap: Record<string, number> = {
@@ -265,6 +295,18 @@ function SellPage() {
               </Field>
 
               <Field label="Description">
+                <div className="flex justify-end mb-2">
+  <button
+    type="button"
+    onClick={generateDescription}
+    disabled={aiLoading}
+    className="h-9 px-4 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:opacity-90 transition-opacity"
+  >
+    {aiLoading
+      ? "Generating..."
+      : "✨ Generate with AI"}
+  </button>
+</div>
                 <textarea
                   value={form.description}
                   onChange={(e) => update("description", e.target.value)}
