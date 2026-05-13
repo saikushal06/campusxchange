@@ -17,6 +17,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as BrowseRouteImport } from './routes/browse'
 import { Route as AdminRouteImport } from './routes/admin'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as SellerSellerIdRouteImport } from './routes/seller.$sellerId'
 import { Route as ProductIdRouteImport } from './routes/product.$id'
 import { Route as EditListingIdRouteImport } from './routes/edit-listing.$id'
 
@@ -60,6 +61,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SellerSellerIdRoute = SellerSellerIdRouteImport.update({
+  id: '/seller/$sellerId',
+  path: '/seller/$sellerId',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProductIdRoute = ProductIdRouteImport.update({
   id: '/product/$id',
   path: '/product/$id',
@@ -82,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/signup': typeof SignupRoute
   '/edit-listing/$id': typeof EditListingIdRoute
   '/product/$id': typeof ProductIdRoute
+  '/seller/$sellerId': typeof SellerSellerIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -94,6 +101,7 @@ export interface FileRoutesByTo {
   '/signup': typeof SignupRoute
   '/edit-listing/$id': typeof EditListingIdRoute
   '/product/$id': typeof ProductIdRoute
+  '/seller/$sellerId': typeof SellerSellerIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -107,6 +115,7 @@ export interface FileRoutesById {
   '/signup': typeof SignupRoute
   '/edit-listing/$id': typeof EditListingIdRoute
   '/product/$id': typeof ProductIdRoute
+  '/seller/$sellerId': typeof SellerSellerIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -121,6 +130,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/edit-listing/$id'
     | '/product/$id'
+    | '/seller/$sellerId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -133,6 +143,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/edit-listing/$id'
     | '/product/$id'
+    | '/seller/$sellerId'
   id:
     | '__root__'
     | '/'
@@ -145,6 +156,7 @@ export interface FileRouteTypes {
     | '/signup'
     | '/edit-listing/$id'
     | '/product/$id'
+    | '/seller/$sellerId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -158,6 +170,7 @@ export interface RootRouteChildren {
   SignupRoute: typeof SignupRoute
   EditListingIdRoute: typeof EditListingIdRoute
   ProductIdRoute: typeof ProductIdRoute
+  SellerSellerIdRoute: typeof SellerSellerIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -218,6 +231,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/seller/$sellerId': {
+      id: '/seller/$sellerId'
+      path: '/seller/$sellerId'
+      fullPath: '/seller/$sellerId'
+      preLoaderRoute: typeof SellerSellerIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/product/$id': {
       id: '/product/$id'
       path: '/product/$id'
@@ -246,6 +266,7 @@ const rootRouteChildren: RootRouteChildren = {
   SignupRoute: SignupRoute,
   EditListingIdRoute: EditListingIdRoute,
   ProductIdRoute: ProductIdRoute,
+  SellerSellerIdRoute: SellerSellerIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

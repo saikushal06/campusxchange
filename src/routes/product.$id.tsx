@@ -266,9 +266,13 @@ const submitReview = async () => {
                     </div>
                   </div>
                 </div>
-                <button className="text-sm font-semibold text-primary hover:underline">
-                  View profile
-                </button>
+  <Link
+  to="/seller/$sellerId"
+  params={{ sellerId: listing.userId }}
+  className="text-sm font-semibold text-primary hover:underline"
+>
+  View profile
+</Link>
               </div>
             </div>
 
