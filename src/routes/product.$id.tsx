@@ -10,6 +10,7 @@ import {
   Share2,
   ShieldCheck,
   Star,
+  Flag,
   Tag,
 } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -183,11 +184,37 @@ const submitReview = async () => {
         createdAt: serverTimestamp(),
       }
     );
+    
 
     setReviewText("");
     setRating(5);
   } catch (error) {
     console.error(error);
+  }
+};
+const reportListing = async () => {
+  const user = auth.currentUser;
+
+  if (!user) {
+    navigate({ to: "/login" });
+    return;
+  }
+
+  try {
+    await addDoc(collection(db, "reports"), {
+      listingId: listing.id,
+      listingTitle: listing.title,
+      reportedBy: user.uid,
+      reportedByEmail: user.email,
+      sellerId: listing.userId,
+      createdAt: serverTimestamp(),
+      status: "pending",
+    });
+
+    alert("Listing reported successfully.");
+  } catch (error) {
+    console.error(error);
+    alert("Failed to report listing.");
   }
 };
   return (
@@ -288,6 +315,12 @@ const submitReview = async () => {
               <button className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-card border hover:border-primary transition-colors">
                 <Share2 className="w-4 h-4" />
               </button>
+              <button
+  onClick={reportListing}
+  className="inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-card border hover:border-red-500 transition-colors"
+>
+  <Flag className="w-4 h-4 text-red-500" />
+</button>
             </div>
 
             <div className="mt-8">
