@@ -26,6 +26,7 @@ import {
 } from "firebase/firestore";
 import { auth, db } from "@/firebase";
 import { signOut } from "firebase/auth";
+import { requestNotificationPermission } from "@/firebase-messaging";
 
 export const Route = createFileRoute("/profile")({
   head: () => ({
@@ -148,7 +149,13 @@ useEffect(() => {
     params: { id },
   });
 };
-
+const enableNotifications = async () => {
+  try {
+    await requestNotificationPermission();
+  } catch (error) {
+    console.error(error);
+  }
+};
 const handleLogout = async () => {
   await signOut(auth);
 
@@ -224,6 +231,12 @@ const handleLogout = async () => {
               >
                 + New listing
               </Link>
+              <button
+  onClick={enableNotifications}
+  className="h-10 px-4 rounded-xl border bg-background hover:bg-secondary transition-colors text-sm font-semibold"
+>
+  🔔 Notifications
+</button>
               <button
   onClick={handleLogout}
   className="h-10 px-4 rounded-xl border bg-background hover:bg-secondary transition-colors text-sm font-semibold"
