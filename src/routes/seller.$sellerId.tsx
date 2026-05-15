@@ -1,7 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, CheckCircle2, Mail, Package, Star } from "lucide-react";
 import { useEffect, useState } from "react";
-import { collection, getDocs, query, where } from "firebase/firestore";
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+} from "firebase/firestore";
 import { db } from "@/firebase";
 import { SiteShell } from "@/components/site-shell";
 import { ListingCard } from "@/components/listing-card";
@@ -38,6 +43,8 @@ function SellerPage() {
   const [sellerListings, setSellerListings] = useState<any[]>([]);
   const [sellerName, setSellerName] = useState("Student Seller");
   const [sellerAvatar, setSellerAvatar] = useState("S");
+  const [avgRating, setAvgRating] = useState(0);
+  const [totalReviews, setTotalReviews] = useState(0);
 
   useEffect(() => {
     const fetchSellerListings = async () => {
@@ -53,6 +60,36 @@ function SellerPage() {
       if (data.length > 0) {
         setSellerName(data[0].seller || "Student Seller");
         setSellerAvatar(data[0].sellerAvatar || "S");
+        let totalStars = 0;
+let totalCount = 0;
+
+for (const listing of snap.docs) {
+  const reviewsSnap = await getDocs(
+    collection(
+      db,
+      "listings",
+      listing.id,
+      "reviews"
+    )
+  );
+
+  reviewsSnap.docs.forEach((reviewDoc) => {
+    const reviewData = reviewDoc.data();
+
+    if (reviewData.rating) {
+      totalStars += reviewData.rating;
+      totalCount++;
+    }
+  });
+}
+
+setTotalReviews(totalCount);
+
+setAvgRating(
+  totalCount > 0
+    ? Number((totalStars / totalCount).toFixed(1))
+    : 0
+);
       }
     };
 
@@ -91,7 +128,12 @@ function SellerPage() {
 
                 <span className="flex items-center gap-1">
                   <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  4.8 seller rating
+{avgRating || "New"} seller rating
+{totalReviews > 0 && (
+  <span>
+    ({totalReviews} reviews)
+  </span>
+)}
                 </span>
 
                 <span className="flex items-center gap-1">
