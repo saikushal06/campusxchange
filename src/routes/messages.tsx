@@ -22,6 +22,44 @@ export const Route = createFileRoute("/messages")({
 
 function MessagesPage() {
   const user = auth.currentUser;
+  useEffect(() => {
+  if (!user) return;
+
+  const setOnline = async () => {
+    await setDoc(
+      doc(db, "presence", user.uid),
+      {
+        online: true,
+        lastSeen: serverTimestamp(),
+        email: user.email,
+      },
+      { merge: true }
+    );
+  };
+
+  setOnline();
+
+  const handleOffline = async () => {
+    await setDoc(
+      doc(db, "presence", user.uid),
+      {
+        online: false,
+        lastSeen: serverTimestamp(),
+      },
+      { merge: true }
+    );
+  };
+
+  window.addEventListener("beforeunload", handleOffline);
+
+  return () => {
+    handleOffline();
+    window.removeEventListener(
+      "beforeunload",
+      handleOffline
+    );
+  };
+}, [user]);
 
   const [chats, setChats] = useState<any[]>([]);
   const [activeChatId, setActiveChatId] = useState<string>(
@@ -30,7 +68,8 @@ function MessagesPage() {
   const [messages, setMessages] = useState<any[]>([]);
   const [text, setText] = useState("");
   const [typingUser, setTypingUser] = useState("");
-
+  const [presenceMap, setPresenceMap] =
+  useState<any>({});
   useEffect(() => {
     if (!user) return;
 
@@ -60,6 +99,7 @@ function MessagesPage() {
 
   const unsub = onSnapshot(
     doc(db, "chats", activeChatId),
+    
     (snapshot) => {
       const data = snapshot.data();
 
@@ -73,6 +113,22 @@ function MessagesPage() {
 
   return () => unsub();
 }, [activeChatId]);
+useEffect(() => {
+  const unsub = onSnapshot(
+    collection(db, "presence"),
+    (snapshot) => {
+      const data: any = {};
+
+      snapshot.docs.forEach((docItem) => {
+        data[docItem.id] = docItem.data();
+      });
+
+      setPresenceMap(data);
+    }
+  );
+
+  return () => unsub();
+}, []);
 
   useEffect(() => {
     if (!activeChatId) return;
@@ -181,8 +237,28 @@ const handleTyping = async (
                           {chat.listingTitle}
                         </div>
                         <div className="text-xs text-muted-foreground line-clamp-1">
-                          {chat.lastMessage || "Start chatting"}
-                        </div>
+  {chat.lastMessage || "Start chatting"}
+</div>
+
+<p
+  className={`text-[11px] font-medium mt-1 ${
+    presenceMap[
+      chat.participants?.find(
+        (p: string) => p !== user?.uid
+      )
+    ]?.online
+      ? "text-emerald-500"
+      : "text-muted-foreground"
+  }`}
+>
+  {presenceMap[
+    chat.participants?.find(
+      (p: string) => p !== user?.uid
+    )
+  ]?.online
+    ? "● Online"
+    : "● Offline"}
+</p>
                       </div>
                     </div>
                   </button>
