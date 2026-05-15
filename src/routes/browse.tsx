@@ -57,6 +57,8 @@ const [maxPrice, setMaxPrice] = useState("");
 const [condition, setCondition] = useState("");
 const [location, setLocation] = useState("");
   const [listings, setListings] = useState<any[]>([]);
+  const [suggestions, setSuggestions] =
+  useState<any[]>([]);
   useEffect(() => {
   const fetchListings = async () => {
     try {
@@ -90,6 +92,28 @@ const [location, setLocation] = useState("");
 
   fetchListings();
 }, []);
+useEffect(() => {
+  if (!query.trim()) {
+    setSuggestions([]);
+    return;
+  }
+
+  const ql = query.toLowerCase();
+
+  const filtered = listings
+    .filter(
+      (item) =>
+        item.title
+          .toLowerCase()
+          .includes(ql) ||
+        item.category
+          .toLowerCase()
+          .includes(ql)
+    )
+    .slice(0, 5);
+
+  setSuggestions(filtered);
+}, [query, listings]);
 
   const results = useMemo(() => {
     let r = listings.slice();
@@ -147,7 +171,7 @@ if (location) {
                 e.preventDefault();
                 navigate({ search: (s: BrowseSearch) => ({ ...s, q: query }) });
               }}
-              className="flex-1 flex items-center gap-2 px-4 h-12 rounded-2xl bg-card border shadow-soft"
+              className="relative flex-1 flex items-center gap-2 px-4 h-12 rounded-2xl bg-card border shadow-soft"
             >
               <Search className="w-4 h-4 text-muted-foreground" />
               <input
@@ -167,6 +191,29 @@ if (location) {
                   <X className="w-4 h-4 text-muted-foreground" />
                 </button>
               )}
+              {suggestions.length > 0 && (
+  <div className="absolute top-14 left-0 right-0 rounded-2xl border bg-card shadow-xl overflow-hidden z-50">
+    {suggestions.map((item) => (
+      <button
+        key={item.id}
+        type="button"
+        onClick={() => {
+          setQuery(item.title);
+          setSuggestions([]);
+        }}
+        className="w-full px-4 py-3 text-left hover:bg-muted transition-colors border-b last:border-b-0"
+      >
+        <div className="font-medium text-sm">
+          {item.title}
+        </div>
+
+        <div className="text-xs text-muted-foreground">
+          {item.category}
+        </div>
+      </button>
+    ))}
+  </div>
+)}
             </form>
             <button
               onClick={() => setShowFilters((s) => !s)}
