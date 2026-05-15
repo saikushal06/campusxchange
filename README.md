@@ -133,7 +133,7 @@ npm run dev
 ## Sai Kushal Ranga
 
 - GitHub: https://github.com/saikushal06
-- LinkedIn: (Add LinkedIn Here)
+- LinkedIn: https://www.linkedin.com/in/sai-kushal-ranga-088348352
 
 ---
 
