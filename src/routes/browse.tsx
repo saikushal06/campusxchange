@@ -3,6 +3,7 @@ import { Search, SlidersHorizontal, X } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { SiteShell } from "@/components/site-shell";
 import { ListingCard } from "@/components/listing-card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { categories, type Category } from "@/lib/data";
 import { collection, getDocs } from "firebase/firestore";
 import { db } from "@/firebase";
@@ -57,11 +58,13 @@ const [maxPrice, setMaxPrice] = useState("");
 const [condition, setCondition] = useState("");
 const [location, setLocation] = useState("");
   const [listings, setListings] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const [suggestions, setSuggestions] =
   useState<any[]>([]);
   useEffect(() => {
   const fetchListings = async () => {
     try {
+      setLoading(true);
       const querySnapshot = await getDocs(collection(db, "listings"));
 
       const data = querySnapshot.docs.map((doc) => {
@@ -85,6 +88,7 @@ const [location, setLocation] = useState("");
 });
 
       setListings(data);
+      setLoading(false);
     } catch (error) {
       console.error(error);
     }
@@ -294,19 +298,42 @@ if (location) {
 
       <section className="py-12">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          {results.length === 0 ? (
-            <EmptyState
-              onReset={() =>
-                navigate({ search: () => ({ category: "All", q: "", sort: "newest" }) })
-              }
-            />
-          ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
-              {results.map((l, i) => (
-                <ListingCard key={l.id} listing={l} index={i} />
-              ))}
-            </div>
-          )}
+          {loading ? (
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+    {Array.from({ length: 8 }).map((_, i) => (
+      <div key={i} className="rounded-3xl border bg-card overflow-hidden">
+  <Skeleton className="h-56 w-full" />
+  <div className="p-4 space-y-3">
+    <Skeleton className="h-4 w-3/4" />
+    <Skeleton className="h-5 w-1/3" />
+    <Skeleton className="h-3 w-1/2" />
+  </div>
+</div>
+    ))}
+  </div>
+) : results.length === 0 ? (
+  <EmptyState
+    onReset={() =>
+      navigate({
+        search: () => ({
+          category: "All",
+          q: "",
+          sort: "newest",
+        }),
+      })
+    }
+  />
+) : (
+  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+    {results.map((l, i) => (
+      <ListingCard
+        key={l.id}
+        listing={l}
+        index={i}
+      />
+    ))}
+  </div>
+)}
         </div>
       </section>
     </SiteShell>

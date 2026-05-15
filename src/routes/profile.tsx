@@ -13,6 +13,13 @@ import {
   Trophy,
   Zap,
 } from "lucide-react";
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  Tooltip,
+} from "recharts";
 import { useEffect, useState } from "react";
 import { SiteShell } from "@/components/site-shell";
 import { ListingCard } from "@/components/listing-card";
@@ -52,6 +59,14 @@ const reviewBreakdown = [
   { stars: 3, count: 1, pct: 3 },
   { stars: 2, count: 0, pct: 0 },
   { stars: 1, count: 0, pct: 0 },
+];
+const analyticsData = [
+  { month: "Jan", views: 120 },
+  { month: "Feb", views: 210 },
+  { month: "Mar", views: 280 },
+  { month: "Apr", views: 390 },
+  { month: "May", views: 520 },
+  { month: "Jun", views: 610 },
 ];
 
 function ProfilePage() {
@@ -337,6 +352,76 @@ const handleLogout = async () => {
             </div>
           </div>
         </div>
+        <div className="mt-6 p-6 rounded-3xl border bg-card">
+  <div className="flex items-center justify-between mb-6">
+    <div>
+      <h3 className="text-lg font-bold">
+        Listing Performance
+      </h3>
+
+      <p className="text-sm text-muted-foreground">
+        Your marketplace engagement growth
+      </p>
+    </div>
+
+    <div className="text-right">
+      <div className="text-2xl font-bold text-emerald-500">
+        +28%
+      </div>
+
+      <div className="text-xs text-muted-foreground">
+        This month
+      </div>
+    </div>
+  </div>
+
+  <div className="h-72">
+    <ResponsiveContainer
+      width="100%"
+      height="100%"
+    >
+      <AreaChart data={analyticsData}>
+        <defs>
+          <linearGradient
+            id="colorViews"
+            x1="0"
+            y1="0"
+            x2="0"
+            y2="1"
+          >
+            <stop
+              offset="5%"
+              stopColor="#22c55e"
+              stopOpacity={0.4}
+            />
+            <stop
+              offset="95%"
+              stopColor="#22c55e"
+              stopOpacity={0}
+            />
+          </linearGradient>
+        </defs>
+
+        <XAxis
+          dataKey="month"
+          tickLine={false}
+          axisLine={false}
+        />
+
+        <Tooltip />
+
+        <Area
+          type="monotone"
+          dataKey="views"
+          stroke="#22c55e"
+          strokeWidth={3}
+          fillOpacity={1}
+          fill="url(#colorViews)"
+        />
+      </AreaChart>
+    </ResponsiveContainer>
+  </div>
+</div>
       </section>
 
       <Section title="Your active listings">
